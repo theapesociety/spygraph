@@ -1,7 +1,9 @@
 import { createConfig } from "ponder";
 import { http } from "viem";
 
-import { ExampleContractAbi } from "./abis/ExampleContractAbi";
+import { SpyGameABI } from "./abis/SpyGameABI";
+import { SpyNFTABI } from "./abis/SpyNFTABI";
+import { SpyIntelABI } from "./abis/SpyIntelABI";
 
 export default createConfig({
   networks: {
@@ -11,9 +13,21 @@ export default createConfig({
     },
   },
   contracts: {
-    ExampleContract: {
+    SpyGameABI: {
       network: "mainnet",
-      abi: ExampleContractAbi,
+      abi: SpyGameABI,
+      address: "0x0000000000000000000000000000000000000000",
+      startBlock: 1234567,
+    },
+    SpyNFTABI: {
+      network: "mainnet",
+      abi: SpyNFTABI,
+      address: "0x0000000000000000000000000000000000000000",
+      startBlock: 1234567,
+    },
+    SpyIntelABI: {
+      network: "mainnet",
+      abi: SpyIntelABI,
       address: "0x0000000000000000000000000000000000000000",
       startBlock: 1234567,
     },
