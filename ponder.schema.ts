@@ -76,7 +76,7 @@ export const spies = onchainTable("spies", (t) => ({
   virtuoso: t.boolean(),
   merchant: t.boolean(),
   immortal: t.boolean(),
-  secure: t.boolean(),
+  efficient: t.boolean(),
   stealth: t.boolean(),
   versatile: t.boolean(),
 

@@ -33,7 +33,7 @@ ponder.on("SpyNFTABI:SpyDynamicMint", async ({ event, context }) => {
   // create a spy
   await context.db.insert(spies).values({
     id: event.args.tokenId,
-    timestamp: new Date(Number(event.block.timestamp)),
+    timestamp: new Date(Number(event.args.timestamp)),
     block: event.block.number,
     mintHash: event.transaction.hash,
     price: event.args.price,
@@ -64,7 +64,7 @@ ponder.on("SpyNFTABI:SpyDynamicMint", async ({ event, context }) => {
     virtuoso: event.args.skills[7],
     merchant: event.args.skills[8],
     immortal: event.args.skills[9],
-    secure: event.args.skills[10],
+    efficient: event.args.skills[10],
     stealth: false,
     versatile: false,
   });

@@ -152,9 +152,15 @@ export const SpyNFTABI = [
         type: "uint256",
       },
       {
-        indexed: true,
+        indexed: false,
         internalType: "uint256",
         name: "price",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
         type: "uint256",
       },
       {
@@ -322,7 +328,7 @@ export const SpyNFTABI = [
   },
   {
     inputs: [],
-    name: "MAX_SUPPLY",
+    name: "MAX_PHASE_1_SUPPLY",
     outputs: [
       {
         internalType: "uint256",
@@ -335,7 +341,7 @@ export const SpyNFTABI = [
   },
   {
     inputs: [],
-    name: "MINT_PRICE",
+    name: "TOTAL_MAX_SUPPLY",
     outputs: [
       {
         internalType: "uint256",
@@ -417,6 +423,24 @@ export const SpyNFTABI = [
         internalType: "enum SpyNFT.Phase",
         name: "",
         type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "currentSpyPrice",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "base",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -677,32 +701,6 @@ export const SpyNFTABI = [
   },
   {
     inputs: [],
-    name: "merkleRoot",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "mintedPublic",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
     name: "name",
     outputs: [
       {
@@ -905,19 +903,6 @@ export const SpyNFTABI = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "_merkleRoot",
-        type: "bytes32",
-      },
-    ],
-    name: "setMerkleRoot",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "enum SpyNFT.Phase",
         name: "_phase",
         type: "uint8",
@@ -937,6 +922,32 @@ export const SpyNFTABI = [
       },
     ],
     name: "setSpyGameContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_spyTokenContract",
+        type: "address",
+      },
+    ],
+    name: "setSpyTokenContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+    ],
+    name: "setStandardMintPrice",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -983,6 +994,32 @@ export const SpyNFTABI = [
   {
     inputs: [],
     name: "spyMintBasePrice",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "spyToken",
+    outputs: [
+      {
+        internalType: "contract SpyToken",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "standardMintPrice",
     outputs: [
       {
         internalType: "uint256",
@@ -1097,19 +1134,6 @@ export const SpyNFTABI = [
     name: "transferOwnership",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32[]",
-        name: "merkleProof",
-        type: "bytes32[]",
-      },
-    ],
-    name: "whitelistMint",
-    outputs: [],
-    stateMutability: "payable",
     type: "function",
   },
   {
