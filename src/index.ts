@@ -141,9 +141,23 @@ ponder.on("SpyGameABI:SpyUnstaked", async ({ event, context }) => {
     INFILTRATE: "currentNumInfiltrators",
   } as const;
   const field = fieldMap[action as keyof typeof fieldMap];
-  await context.db.update(gameState, { id: 1 }).set((row) => ({
-    [field]: (row[field] ?? 1) - 1,
-  }));
+  if (field === "currentNumDefenders") {
+    await context.db.update(gameState, { id: 1 }).set((row) => ({
+      currentNumDefenders: (row.currentNumDefenders ?? 1) - 1,
+    }));
+  } else if (field === "currentNumRecons") {
+    await context.db.update(gameState, { id: 1 }).set((row) => ({
+      currentNumRecons: (row.currentNumRecons ?? 1) - 1,
+    }));
+  } else if (field === "currentNumSaboteurs") {
+    await context.db.update(gameState, { id: 1 }).set((row) => ({
+      currentNumSaboteurs: (row.currentNumSaboteurs ?? 1) - 1,
+    }));
+  } else if (field === "currentNumInfiltrators") {
+    await context.db.update(gameState, { id: 1 }).set((row) => ({
+      currentNumInfiltrators: (row.currentNumInfiltrators ?? 1) - 1,
+    }));
+  }
 });
 
 ponder.on("SpyGameABI:GameStartTimeSet", async ({ event, context }) => {
