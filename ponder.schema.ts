@@ -93,6 +93,62 @@ export const spiesRelations = relations(spies, ({ one, many }) => ({
   rewards: many(rewards),
 }));
 
+export const spySnapshots = onchainTable(
+  "spySnapshots",
+  (t) => ({
+    id: t.bigint(),
+    currentRound: t.bigint(),
+    // mint details
+    timestamp: t.timestamp(),
+    block: t.bigint(),
+    mintHash: t.hex(),
+    price: t.bigint(),
+
+    // Ownership/Lifecycle
+    agencyAddress: t.hex(),
+    alive: t.boolean(),
+    staked: t.boolean(),
+    currentAction: action("action"),
+
+    // Progression
+    rank: t.integer(),
+    xp: t.bigint(),
+    lastUpgradedTurn: t.bigint(),
+    availableRewards: t.bigint(),
+
+    // behavior counters
+    consecutiveDefend: t.integer(),
+    consecutiveSabotage: t.integer(),
+    consecutiveInfiltrate: t.integer(),
+    numKills: t.integer(),
+    numConverts: t.integer(),
+
+    // skills
+    grade: grade("grade"),
+    guard: t.boolean(),
+    saboteur: t.boolean(),
+    infiltrator: t.boolean(),
+    espionage: t.boolean(),
+    cunning: t.boolean(),
+    persuasion: t.boolean(),
+    assassin: t.boolean(),
+    virtuoso: t.boolean(),
+    merchant: t.boolean(),
+    immortal: t.boolean(),
+    efficient: t.boolean(),
+    stealth: t.boolean(),
+    versatile: t.boolean(),
+
+    equippedSchematic: t.integer(),
+    schematicExpiresTurn: t.bigint(),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.id, table.currentRound],
+    }),
+  })
+);
+
 export const rounds = onchainTable("rounds", (t) => ({
   id: t.bigint().primaryKey(),
   state: roundState("roundState"),
@@ -153,6 +209,14 @@ export const battlesRelations = relations(battles, ({ one }) => ({
   opponent: one(spies, {
     fields: [battles.opponentId],
     references: [spies.id],
+  }),
+  spySnapshot: one(spySnapshots, {
+    fields: [battles.spyId, battles.roundId],
+    references: [spySnapshots.id, spySnapshots.currentRound],
+  }),
+  opponentSnapshot: one(spySnapshots, {
+    fields: [battles.opponentId, battles.roundId],
+    references: [spySnapshots.id, spySnapshots.currentRound],
   }),
 }));
 

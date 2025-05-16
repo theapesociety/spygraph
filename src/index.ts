@@ -9,6 +9,7 @@ import {
   grade,
   rewards,
   spies,
+  spySnapshots,
 } from "ponder:schema";
 
 ponder.on("SpyGameABI:Initialized", async ({ event, context }) => {
@@ -252,6 +253,17 @@ ponder.on("SpyGameABI:DefenderReward", async ({ event, context }) => {
     action: "DEFEND",
   });
 
+  const spy = await context.db.find(spies, { id: event.args.spyId });
+
+  // snapshot spies
+  if (spy && spy.id !== undefined) {
+    await context.db.insert(spySnapshots).values({
+      ...spy,
+      id: spy.id,
+      currentRound: event.args.roundId,
+    });
+  }
+
   // create a battle
   await context.db.insert(battles).values({
     roundId: event.args.roundId,
@@ -277,6 +289,24 @@ ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
   const action = ["DEFEND", "RECON", "SABOTAGE", "INFILTRATE"][
     Number(event.args.action)
   ] as "DEFEND" | "RECON" | "SABOTAGE" | "INFILTRATE";
+
+  // create spy snapshot
+  const spy = await context.db.find(spies, { id: event.args.spyA });
+  if (spy && spy.id !== undefined) {
+    await context.db.insert(spySnapshots).values({
+      ...spy,
+      currentRound: event.args.roundId,
+    });
+  }
+
+  // create opponent snapshot
+  const opponent = await context.db.find(spies, { id: event.args.spyB });
+  if (opponent && opponent.id !== undefined) {
+    await context.db.insert(spySnapshots).values({
+      ...opponent,
+      currentRound: event.args.roundId,
+    });
+  }
 
   // create a battle
   await context.db.insert(battles).values({
@@ -516,6 +546,15 @@ ponder.on("SpyGameABI:AgencySchematicAttached", async ({ event, context }) => {
 });
 
 ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
+  // create spy snapshot
+  const spy = await context.db.find(spies, { id: event.args.spyId });
+  if (spy && spy.id !== undefined) {
+    await context.db.insert(spySnapshots).values({
+      ...spy,
+      currentRound: event.args.currentTurn,
+    });
+  }
+
   // battle intel
   await context.db
     .insert(battles)
@@ -532,14 +571,13 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
     }));
 
   // get spy
-  const spy = await context.db.find(spies, { id: event.args.spyId });
-  if (!spy?.agencyAddress) return;
-  // increment agency intel found
-  await context.db
-    .update(agencies, { address: spy.agencyAddress })
-    .set((row) => ({
-      totalIntelFound: (row.totalIntelFound ?? 0) + 1,
-    }));
+  if (spy?.agencyAddress) {
+    await context.db
+      .update(agencies, { address: spy.agencyAddress })
+      .set((row) => ({
+        totalIntelFound: (row.totalIntelFound ?? 0) + 1,
+      }));
+  }
 
   // increment round intel found
   await context.db
