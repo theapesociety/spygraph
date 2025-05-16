@@ -29,7 +29,7 @@ export default createConfig({
     SpyIntelABI: {
       network: "baseSepolia",
       abi: SpyIntelABI,
-      address: "0xb2b3625327cc36acfeb8fe01c58277eafd6f7e1b",
+      address: "0x204fba0bc813713a12bd2ad28e00e12112078bba",
       startBlock: 25390000,
     },
   },
