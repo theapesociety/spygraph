@@ -42,7 +42,6 @@ ponder.on("SpyNFTABI:SpyDynamicMint", async ({ event, context }) => {
     staked: false,
     rank: 0,
     xp: 0n,
-    availableRewards: 0n,
     consecutiveDefend: 0,
     consecutiveSabotage: 0,
     consecutiveInfiltrate: 0,

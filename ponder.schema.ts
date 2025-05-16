@@ -56,7 +56,7 @@ export const spies = onchainTable("spies", (t) => ({
   rank: t.integer(),
   xp: t.bigint(),
   lastUpgradedTurn: t.bigint(),
-  availableRewards: t.bigint(),
+  totalSpyAvailable: t.bigint().default(0n),
 
   // behavior counters
   consecutiveDefend: t.integer(),
@@ -83,8 +83,6 @@ export const spies = onchainTable("spies", (t) => ({
 
   equippedSchematic: t.integer(),
   schematicExpiresTurn: t.bigint(),
-
-  totalSpyAvailable: t.bigint().default(0n),
 }));
 
 export const spiesRelations = relations(spies, ({ one, many }) => ({
