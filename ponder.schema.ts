@@ -228,7 +228,7 @@ export const rewards = onchainTable("rewards", (t) => ({
 
   amount: t.bigint(),
   claimedAmount: t.bigint(),
-  fullyClaimed: t.boolean(),
+  fullyClaimed: t.boolean().default(false),
   vestingStart: t.timestamp(),
 
   action: action("action"),
