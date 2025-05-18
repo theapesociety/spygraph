@@ -579,10 +579,13 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
   // create spy snapshot
   const spy = await context.db.find(spies, { id: event.args.spyId });
   if (spy && spy.id !== undefined) {
-    await context.db.insert(spySnapshots).values({
-      ...spy,
-      currentRound: event.args.currentTurn,
-    });
+    await context.db
+      .insert(spySnapshots)
+      .values({
+        ...spy,
+        currentRound: event.args.currentTurn,
+      })
+      .onConflictDoNothing();
   }
 
   // battle intel
