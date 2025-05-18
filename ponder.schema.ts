@@ -246,16 +246,24 @@ export const rewardsRelations = relations(rewards, ({ one, many }) => ({
   rewardClaims: many(rewardClaims),
 }));
 
-export const rewardClaims = onchainTable("rewardClaims", (t) => ({
-  txHash: t.hex().primaryKey(),
+export const rewardClaims = onchainTable(
+  "rewardClaims",
+  (t) => ({
+    txHash: t.hex(),
 
-  rewardId: t.bigint(),
-  agencyId: t.hex(),
-  spyId: t.bigint(),
-  amount: t.bigint(),
+    rewardId: t.bigint(),
+    agencyId: t.hex(),
+    spyId: t.bigint(),
+    amount: t.bigint(),
 
-  timestamp: t.timestamp(),
-}));
+    timestamp: t.timestamp(),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.txHash, table.rewardId],
+    }),
+  })
+);
 
 export const rewardClaimsRelations = relations(rewardClaims, ({ one }) => ({
   reward: one(rewards, {
