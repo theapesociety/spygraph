@@ -263,15 +263,7 @@ ponder.on("SpyGameABI:DefenderReward", async ({ event, context }) => {
     });
   }
 
-  // increment totalSpyAvailable for agency and spy
-  if (spy?.agencyAddress) {
-    await context.db
-      .update(agencies, { address: spy.agencyAddress })
-      .set((row) => ({
-        totalSpyAvailable:
-          (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-      }));
-  }
+  // increment totalSpyAvailable for spy
   await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
     totalSpyAvailable:
       (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
@@ -299,15 +291,7 @@ ponder.on("SpyGameABI:SabotageReward", async ({ event, context }) => {
 
   const spy = await context.db.find(spies, { id: event.args.spyId });
 
-  // increment totalSpyAvailable for agency and spy
-  if (spy?.agencyAddress) {
-    await context.db
-      .update(agencies, { address: spy.agencyAddress })
-      .set((row) => ({
-        totalSpyAvailable:
-          (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-      }));
-  }
+  // increment totalSpyAvailable for spy
   await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
     totalSpyAvailable:
       (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
@@ -473,15 +457,7 @@ ponder.on("SpyGameABI:InfiltrateReward", async ({ event, context }) => {
 
   const spy = await context.db.find(spies, { id: event.args.spyId });
 
-  // increment totalSpyAvailable for agency and spy
-  if (spy?.agencyAddress) {
-    await context.db
-      .update(agencies, { address: spy.agencyAddress })
-      .set((row) => ({
-        totalSpyAvailable:
-          (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-      }));
-  }
+  // increment totalSpyAvailable for spy
   await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
     totalSpyAvailable:
       (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
@@ -507,9 +483,12 @@ ponder.on("SpyGameABI:SpyUpgraded", async ({ event, context }) => {
 
 ponder.on("SpyGameABI:RewardClaimed", async ({ event, context }) => {
   // update reward and set claimed amount
-  await context.db.update(rewards, { id: event.args.rewardId }).set({
-    claimedAmount: event.args.amount,
-  });
+  await context.db.update(rewards, { id: event.args.rewardId }).set((row) => ({
+    claimedAmount: (row.claimedAmount ?? 0n) + BigInt(event.args.amount),
+    fullyClaimed:
+      (row.claimedAmount ?? 0n) + BigInt(event.args.amount) >=
+      (row.amount ?? 0n),
+  }));
 
   const reward = await context.db.find(rewards, {
     id: event.args.rewardId,
@@ -542,8 +521,6 @@ ponder.on("SpyGameABI:RewardClaimed", async ({ event, context }) => {
     })
     .set((row) => ({
       totalSpyClaimed: (row.totalSpyClaimed ?? 0n) + BigInt(event.args.amount),
-      totalSpyAvailable:
-        (row.totalSpyAvailable ?? 0n) - BigInt(event.args.amount),
     }));
 
   // remove total spy available from spy

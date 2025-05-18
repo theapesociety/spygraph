@@ -25,7 +25,6 @@ export const agencies = onchainTable("agencies", (t) => ({
   numConverts: t.integer().default(0),
   numRevives: t.integer().default(0),
   totalSpyClaimed: t.bigint().default(0n),
-  totalSpyAvailable: t.bigint().default(0n),
   totalIntelFound: t.integer().default(0),
   totalSchematicsCrafted: t.integer().default(0),
 
@@ -229,6 +228,7 @@ export const rewards = onchainTable("rewards", (t) => ({
 
   amount: t.bigint(),
   claimedAmount: t.bigint(),
+  fullyClaimed: t.boolean(),
   vestingStart: t.timestamp(),
 
   action: action("action"),
