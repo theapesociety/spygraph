@@ -187,6 +187,7 @@ export const battles = onchainTable(
     conversion: t.boolean(),
     kill: t.boolean(),
     spyGain: t.bigint(),
+    opponentGain: t.bigint(),
 
     intelFound: t.integer().array(),
   }),

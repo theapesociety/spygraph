@@ -331,6 +331,7 @@ ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
     kill: Boolean(event.args.resultBits & 0x04),
     conversion: Boolean(event.args.resultBits & 0x08),
     spyGain: event.args.rewardA,
+    opponentGain: event.args.rewardB,
   });
 
   // paired battle? → mirror row for spyB
@@ -350,6 +351,7 @@ ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
       kill: Boolean(event.args.resultBits & 0x04),
       conversion: Boolean(event.args.resultBits & 0x08),
       spyGain: event.args.rewardB,
+      opponentGain: event.args.rewardA,
     });
   }
 });
