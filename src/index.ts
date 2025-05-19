@@ -13,6 +13,7 @@ import {
   agencyPoints,
   spyPoints,
 } from "ponder:schema";
+import { sql, and, eq, gt } from "drizzle-orm";
 
 ponder.on("SpyGameABI:Initialized", async ({ event, context }) => {
   // create game state
@@ -201,6 +202,74 @@ ponder.on("SpyGameABI:RoundStateChanged", async ({ event, context }) => {
         state: "ACTIVE",
       })
       .onConflictDoNothing();
+
+    if (event.args.roundId > 0) {
+      const seasonId = BigInt(
+        Math.floor((Number(event.args.roundId) - 1) / 15)
+      );
+      const seasonTotals = await context.db.sql
+        .select({
+          agencyAddress: spies.agencyAddress,
+          points: sql<number>`SUM(${spyPoints.points})`.as("points"),
+        })
+        .from(spyPoints)
+        .innerJoin(spies, eq(spies.id, spyPoints.spyId))
+        .where(and(gt(spyPoints.points, 0), eq(spyPoints.seasonId, seasonId)))
+        .groupBy(spies.agencyAddress);
+
+      const CHUNK = 10_000; // safe margin under the 65 k param limit
+      for (let i = 0; i < seasonTotals.length; i += CHUNK) {
+        const slice = seasonTotals.slice(i, i + CHUNK);
+
+        await context.db.sql.execute(sql`
+          INSERT INTO "agencyPoints" (season_id, agency_address, points)
+          VALUES ${sql.join(
+            slice.map(
+              ({ agencyAddress, points }) =>
+                sql`(${seasonId}, ${agencyAddress}, ${points})`
+            ),
+            sql`, `
+          )}
+          ON CONFLICT (season_id, agency_address)
+          DO UPDATE SET points = EXCLUDED.points;
+        `);
+      }
+      // const spies = await context.db.sql.query.spyPoints.findMany({
+      //   where: (table, { gt, and, eq }) =>
+      //     and(gt(table.points, 0), eq(table.seasonId, seasonId)),
+      //   with: {
+      //     spy: true,
+      //   },
+      // });
+      // let pointsArray: { agencyAddress: string; points: number }[] = [];
+      // for (const spy of spies) {
+      //   if (spy.spy && spy.spy.agencyAddress && spy.points) {
+      //     const existingEntry = pointsArray.find(
+      //       (entry) => spy.spy && entry.agencyAddress === spy.spy.agencyAddress
+      //     );
+      //     if (existingEntry) {
+      //       existingEntry.points += spy.points;
+      //     } else {
+      //       pointsArray.push({
+      //         agencyAddress: spy.spy.agencyAddress,
+      //         points: spy.points,
+      //       });
+      //     }
+      //   }
+      // }
+      // for (const entry of pointsArray) {
+      //   await context.db
+      //     .insert(agencyPoints)
+      //     .values({
+      //       seasonId: seasonId,
+      //       agencyAddress: entry.agencyAddress as `0x${string}`,
+      //       points: entry.points,
+      //     })
+      //     .onConflictDoUpdate((row) => ({
+      //       points: entry.points,
+      //     }));
+      // }
+    }
   } else {
     // update round state
     await context.db.update(rounds, { id: event.args.roundId }).set({
@@ -282,17 +351,6 @@ ponder.on("SpyGameABI:DefenderReward", async ({ event, context }) => {
   if (!spy || spy.id === undefined) return;
 
   const seasonId = Math.floor(Number(event.args.roundId) / 15);
-  // give leaderboard points to agency
-  await context.db
-    .insert(agencyPoints)
-    .values({
-      seasonId: BigInt(seasonId),
-      agencyAddress: spy.agencyAddress,
-      points: 1,
-    })
-    .onConflictDoUpdate((row) => ({
-      points: (row.points ?? 0) + 1,
-    }));
 
   // give leaderboard points to spy
   await context.db
@@ -400,18 +458,6 @@ ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
   } else if (event.args.resultBits & 0x08) {
     points += 7;
   }
-
-  // give leaderboard points to agency
-  await context.db
-    .insert(agencyPoints)
-    .values({
-      seasonId: BigInt(seasonId),
-      agencyAddress: spy.agencyAddress,
-      points: points,
-    })
-    .onConflictDoUpdate((row) => ({
-      points: (row.points ?? 0) + points,
-    }));
 
   // give leaderboard points to spy
   await context.db
@@ -705,17 +751,6 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
   if (!spy || spy.id === undefined) return;
   if (existingBattle) return;
   const seasonId = Math.floor(Number(event.args.currentTurn) / 15);
-  // give leaderboard points to agency
-  await context.db
-    .insert(agencyPoints)
-    .values({
-      seasonId: BigInt(seasonId),
-      agencyAddress: spy.agencyAddress,
-      points: 3,
-    })
-    .onConflictDoUpdate((row) => ({
-      points: (row.points ?? 0) + 3,
-    }));
 
   // give leaderboard points to spy
   await context.db
