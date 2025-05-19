@@ -1,4 +1,11 @@
-import { onchainEnum, onchainTable, primaryKey, relations } from "ponder";
+import {
+  index,
+  onchainEnum,
+  onchainTable,
+  point,
+  primaryKey,
+  relations,
+} from "ponder";
 
 export const action = onchainEnum("action", [
   "DEFEND",
@@ -274,6 +281,50 @@ export const rewardClaimsRelations = relations(rewardClaims, ({ one }) => ({
   agency: one(agencies, {
     fields: [rewardClaims.agencyId],
     references: [agencies.address],
+  }),
+}));
+
+export const agencyPoints = onchainTable(
+  "agencyPoints",
+  (t) => ({
+    seasonId: t.bigint(),
+    agencyAddress: t.hex(),
+    points: t.integer().default(0),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.seasonId, table.agencyAddress],
+    }),
+    seasonPointsIdx: index().on(table.seasonId, table.points),
+  })
+);
+
+export const agencyPointsRelations = relations(agencyPoints, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [agencyPoints.agencyAddress],
+    references: [agencies.address],
+  }),
+}));
+
+export const spyPoints = onchainTable(
+  "spyPoints",
+  (t) => ({
+    seasonId: t.bigint(),
+    spyId: t.bigint(),
+    points: t.integer().default(0),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.seasonId, table.spyId],
+    }),
+    seasonPointsIdx: index().on(table.seasonId, table.points),
+  })
+);
+
+export const spyPointsRelations = relations(spyPoints, ({ one }) => ({
+  spy: one(spies, {
+    fields: [spyPoints.spyId],
+    references: [spies.id],
   }),
 }));
 

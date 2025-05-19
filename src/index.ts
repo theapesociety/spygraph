@@ -10,6 +10,8 @@ import {
   rewards,
   spies,
   spySnapshots,
+  agencyPoints,
+  spyPoints,
 } from "ponder:schema";
 
 ponder.on("SpyGameABI:Initialized", async ({ event, context }) => {
@@ -276,6 +278,33 @@ ponder.on("SpyGameABI:DefenderReward", async ({ event, context }) => {
     action: "DEFEND",
     spyGain: event.args.amount,
   });
+
+  if (!spy || spy.id === undefined) return;
+
+  const seasonId = Math.floor(Number(event.args.roundId) / 15);
+  // give leaderboard points to agency
+  await context.db
+    .insert(agencyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      agencyAddress: spy.agencyAddress,
+      points: 1,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + 1,
+    }));
+
+  // give leaderboard points to spy
+  await context.db
+    .insert(spyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      spyId: spy.id,
+      points: 1,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + 1,
+    }));
 });
 
 ponder.on("SpyGameABI:SabotageReward", async ({ event, context }) => {
@@ -354,6 +383,47 @@ ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
       opponentGain: event.args.rewardA,
     });
   }
+
+  if (!spy || spy.id === undefined) return;
+  const seasonId = Math.floor(Number(event.args.roundId) / 15);
+  let points = 0;
+  if (action === "SABOTAGE") {
+    points = 10;
+    if (event.args.resultBits & 0x04 || event.args.resultBits & 0x08) {
+      points += 5;
+    }
+  } else if (action === "INFILTRATE") {
+    points = 15;
+  }
+  if (event.args.resultBits & 0x04) {
+    points += 10;
+  } else if (event.args.resultBits & 0x08) {
+    points += 7;
+  }
+
+  // give leaderboard points to agency
+  await context.db
+    .insert(agencyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      agencyAddress: spy.agencyAddress,
+      points: points,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + points,
+    }));
+
+  // give leaderboard points to spy
+  await context.db
+    .insert(spyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      spyId: spy.id,
+      points: points,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + points,
+    }));
 });
 
 const fieldMap = {
@@ -590,6 +660,12 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
       .onConflictDoNothing();
   }
 
+  // Check if a battle already exists for this spy in this round
+  const existingBattle = await context.db.find(battles, {
+    spyId: event.args.spyId,
+    roundId: event.args.currentTurn,
+  });
+
   // battle intel
   await context.db
     .insert(battles)
@@ -625,6 +701,33 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
   await context.db.update(stats, { id: 1 }).set((row) => ({
     totalIntelFound: (row.totalIntelFound ?? 0) + 1,
   }));
+
+  if (!spy || spy.id === undefined) return;
+  if (existingBattle) return;
+  const seasonId = Math.floor(Number(event.args.currentTurn) / 15);
+  // give leaderboard points to agency
+  await context.db
+    .insert(agencyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      agencyAddress: spy.agencyAddress,
+      points: 3,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + 3,
+    }));
+
+  // give leaderboard points to spy
+  await context.db
+    .insert(spyPoints)
+    .values({
+      seasonId: BigInt(seasonId),
+      spyId: spy.id,
+      points: 3,
+    })
+    .onConflictDoUpdate((row) => ({
+      points: (row.points ?? 0) + 3,
+    }));
 });
 
 ponder.on("SpyIntelABI:CraftSchematic", async ({ event, context }) => {
