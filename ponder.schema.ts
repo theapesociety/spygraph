@@ -62,7 +62,6 @@ export const spies = onchainTable("spies", (t) => ({
   rank: t.integer(),
   xp: t.bigint(),
   lastUpgradedTurn: t.bigint(),
-  totalSpyAvailable: t.bigint().default(0n),
 
   // behavior counters
   consecutiveDefend: t.integer(),

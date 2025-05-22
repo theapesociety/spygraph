@@ -129,13 +129,13 @@ ponder.on("SpyGameABI:SpyStaked", async ({ event, context }) => {
 });
 
 ponder.on("SpyGameABI:SpyUnstaked", async ({ event, context }) => {
+  const spy = await context.db.find(spies, { id: event.args.spyId });
   // update spy and remove action and agency
   await context.db
     .update(spies, { id: event.args.spyId })
     .set({ staked: false, agencyAddress: null, currentAction: null });
 
   // decrement game state for spies staked
-  const spy = await context.db.find(spies, { id: event.args.spyId });
   const action = spy?.currentAction;
   const fieldMap = {
     DEFEND: "currentNumDefenders",
@@ -234,41 +234,6 @@ ponder.on("SpyGameABI:RoundStateChanged", async ({ event, context }) => {
           DO UPDATE SET points = EXCLUDED.points;
         `);
       }
-      // const spies = await context.db.sql.query.spyPoints.findMany({
-      //   where: (table, { gt, and, eq }) =>
-      //     and(gt(table.points, 0), eq(table.seasonId, seasonId)),
-      //   with: {
-      //     spy: true,
-      //   },
-      // });
-      // let pointsArray: { agencyAddress: string; points: number }[] = [];
-      // for (const spy of spies) {
-      //   if (spy.spy && spy.spy.agencyAddress && spy.points) {
-      //     const existingEntry = pointsArray.find(
-      //       (entry) => spy.spy && entry.agencyAddress === spy.spy.agencyAddress
-      //     );
-      //     if (existingEntry) {
-      //       existingEntry.points += spy.points;
-      //     } else {
-      //       pointsArray.push({
-      //         agencyAddress: spy.spy.agencyAddress,
-      //         points: spy.points,
-      //       });
-      //     }
-      //   }
-      // }
-      // for (const entry of pointsArray) {
-      //   await context.db
-      //     .insert(agencyPoints)
-      //     .values({
-      //       seasonId: seasonId,
-      //       agencyAddress: entry.agencyAddress as `0x${string}`,
-      //       points: entry.points,
-      //     })
-      //     .onConflictDoUpdate((row) => ({
-      //       points: entry.points,
-      //     }));
-      // }
     }
   } else {
     // update round state
@@ -334,12 +299,6 @@ ponder.on("SpyGameABI:DefenderReward", async ({ event, context }) => {
     });
   }
 
-  // increment totalSpyAvailable for spy
-  await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
-    totalSpyAvailable:
-      (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-  }));
-
   // create a battle
   await context.db.insert(battles).values({
     roundId: event.args.roundId,
@@ -375,14 +334,6 @@ ponder.on("SpyGameABI:SabotageReward", async ({ event, context }) => {
     vestingStart: new Date(Number(event.args.vestingStart)),
     action: "SABOTAGE",
   });
-
-  const spy = await context.db.find(spies, { id: event.args.spyId });
-
-  // increment totalSpyAvailable for spy
-  await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
-    totalSpyAvailable:
-      (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-  }));
 });
 
 ponder.on("SpyGameABI:BattleLog", async ({ event, context }) => {
@@ -572,14 +523,6 @@ ponder.on("SpyGameABI:InfiltrateReward", async ({ event, context }) => {
     vestingStart: new Date(Number(event.args.vestingStart)),
     action: "INFILTRATE",
   });
-
-  const spy = await context.db.find(spies, { id: event.args.spyId });
-
-  // increment totalSpyAvailable for spy
-  await context.db.update(spies, { id: event.args.spyId }).set((row) => ({
-    totalSpyAvailable:
-      (row.totalSpyAvailable ?? 0n) + BigInt(event.args.amount),
-  }));
 });
 
 ponder.on("SpyGameABI:XPGained", async ({ event, context }) => {
@@ -641,12 +584,6 @@ ponder.on("SpyGameABI:RewardClaimed", async ({ event, context }) => {
       totalSpyClaimed: (row.totalSpyClaimed ?? 0n) + BigInt(event.args.amount),
     }));
 
-  // remove total spy available from spy
-  await context.db.update(spies, { id: reward.spyId }).set((row) => ({
-    totalSpyAvailable:
-      (row.totalSpyAvailable ?? 0n) - BigInt(event.args.amount),
-  }));
-
   // add to stats
   await context.db.update(stats, { id: 1 }).set((row) => ({
     totalSpyClaimed: (row.totalSpyClaimed ?? 0n) + BigInt(event.args.amount),
@@ -655,18 +592,14 @@ ponder.on("SpyGameABI:RewardClaimed", async ({ event, context }) => {
 
 ponder.on("SpyGameABI:SpyRevived", async ({ event, context }) => {
   // update spy and set alive to true
-  await context.db.update(spies, { id: event.args.spyId }).set({
+  const spy = await context.db.update(spies, { id: event.args.spyId }).set({
     alive: true,
   });
-
-  const spy = await context.db.find(spies, { id: event.args.spyId });
 
   if (spy?.agencyAddress) {
     // add revive to agency
     await context.db
-      .update(agencies, {
-        address: spy?.agencyAddress,
-      })
+      .update(agencies, { address: spy?.agencyAddress })
       .set((row) => ({
         numRevives: (row.numRevives ?? 0) + 1,
       }));
@@ -706,11 +639,7 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
       .onConflictDoNothing();
   }
 
-  // Check if a battle already exists for this spy in this round
-  const existingBattle = await context.db.find(battles, {
-    spyId: event.args.spyId,
-    roundId: event.args.currentTurn,
-  });
+  let existingBattle = false;
 
   // battle intel
   await context.db
@@ -721,11 +650,14 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
       action: "RECON",
       intelFound: [Number(event.args.intelId)],
     })
-    .onConflictDoUpdate((battle) => ({
-      intelFound: (battle.intelFound ?? []).concat([
-        Number(event.args.intelId),
-      ]),
-    }));
+    .onConflictDoUpdate((battle) => {
+      existingBattle = true;
+      return {
+        intelFound: (battle.intelFound ?? []).concat([
+          Number(event.args.intelId),
+        ]),
+      };
+    });
 
   // get spy
   if (spy?.agencyAddress) {
@@ -749,6 +681,7 @@ ponder.on("SpyIntelABI:MintIntel", async ({ event, context }) => {
   }));
 
   if (!spy || spy.id === undefined) return;
+
   if (existingBattle) return;
   const seasonId = Math.floor(Number(event.args.currentTurn) / 15);
 
